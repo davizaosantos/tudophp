@@ -10,25 +10,25 @@
     <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/index.php">Nome Do Sistema</a>
+            <a class="navbar-brand" href="/index.php">Sistema de Controle</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSistema">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSistema">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Menu1</a>
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Pessoas</a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/aaaa-create.php">Cadastrar</a></li>
-                            <li><a class="dropdown-item" href="/bbb-list.php">Listar</a></li>
-                            <li><a class="dropdown-item" href="/ccc-pesquisar.php">Pesquisar</a></li>
+                            <li><a class="dropdown-item" href="/pessoa-create.php">Cadastrar</a></li>
+                            <li><a class="dropdown-item" href="/listar.php">Listar</a></li>
+                            <li><a class="dropdown-item" href="/pessoa-pesquisar.php">Pesquisar</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Menu2</a>
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Movimentação</a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/ddd-create.php">Cadastrar</a></li>
-                            <li><a class="dropdown-item" href="/eee-list.php">Listar</a></li>
+                            <li><a class="dropdown-item" href="/movimentação-create.php">Cadastrar</a></li>
+                            <li><a class="dropdown-item" href="/movimentação-list.php">Listar</a></li>
                         </ul>
                     </li>
                 </ul>
