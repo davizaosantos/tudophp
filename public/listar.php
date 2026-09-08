@@ -1,35 +1,47 @@
 <?php
 
-require_once "../vendor/autoload.php";
+require_once __DIR__ . "/../vendor/autoload.php";
 
-use App\Config\Database;
+use App\DAO\PessoaDAO;
 
 try {
-    $conn = Database::conectar();
 
-    $sql = "SELECT * FROM pessoas ORDER BY id DESC";
+    $dao = new PessoaDAO();
 
-    $stmt = $conn->query($sql);
-    $pessoas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $pessoas = $dao->listar();
 
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
+
     die("Erro ao listar pessoas: " . $e->getMessage());
+
 }
 
 $content = '
+
 <div class="container mt-4">
 
     <div class="d-flex justify-content-between align-items-center mb-3">
+
         <h2>Lista de Pessoas</h2>
 
-        <a href="pessoa-form.php" class="btn btn-primary">
-            Cadastrar Pessoa
-        </a>
+        <div>
+
+            <a href="pessoa-pesquisar.php" class="btn btn-info">
+                Pesquisar
+            </a>
+
+            <a href="pessoa-form.php" class="btn btn-primary">
+                Cadastrar Pessoa
+            </a>
+
+        </div>
+
     </div>
 
     <table class="table table-striped table-bordered">
 
         <thead class="table-dark">
+
             <tr>
                 <th>ID</th>
                 <th>Nome</th>
@@ -40,6 +52,7 @@ $content = '
                 <th>Atualizado em</th>
                 <th>Ações</th>
             </tr>
+
         </thead>
 
         <tbody>
@@ -47,37 +60,59 @@ $content = '
 
 foreach ($pessoas as $pessoa) {
 
+    $id = htmlspecialchars($pessoa['id']);
+    $nome = htmlspecialchars($pessoa['nome']);
+    $telefone = htmlspecialchars($pessoa['telefone'] ?? '');
+    $cpf = htmlspecialchars($pessoa['cpf']);
+    $endereco = htmlspecialchars($pessoa['endereco'] ?? '');
+    $createdAt = htmlspecialchars($pessoa['createdAt'] ?? '');
+    $updatedAt = htmlspecialchars($pessoa['updatedAt'] ?? '');
+
     $content .= '
+
             <tr>
-                <td>' . $pessoa['id'] . '</td>
-                <td>' . $pessoa['nome'] . '</td>
-                <td>' . $pessoa['telefone'] . '</td>
-                <td>' . $pessoa['cpf'] . '</td>
-                <td>' . $pessoa['endereco'] . '</td>
-                <td>' . $pessoa['createdAt'] . '</td>
-                <td>' . $pessoa['updatedAt'] . '</td>
+
+                <td>' . $id . '</td>
+
+                <td>' . $nome . '</td>
+
+                <td>' . $telefone . '</td>
+
+                <td>' . $cpf . '</td>
+
+                <td>' . $endereco . '</td>
+
+                <td>' . $createdAt . '</td>
+
+                <td>' . $updatedAt . '</td>
 
                 <td>
-                    <a href="pessoa-alterar.php?id=' . $pessoa['id'] . '" 
-                       class="btn btn-warning btn-sm">
-                        Alterar
-                    </a>
 
-                    <a href="pessoa-form.php" 
-                       class="btn btn-secondary btn-sm">
-                        Limpar
-                    </a>
+                   <a href="pessoa-alterar.php?id=' . $id . '"
+   class="btn btn-warning btn-sm">
+    Alterar
+</a>
+
+<a href="pessoa-excluir.php?id=' . $id . '"
+   class="btn btn-danger btn-sm"
+   onclick="return confirm(\'Tem certeza que deseja excluir esta pessoa?\')">
+    Excluir
+</a>
                 </td>
+
             </tr>
+
     ';
 }
 
 $content .= '
+
         </tbody>
 
     </table>
 
 </div>
+
 ';
 
 include "layout.php";

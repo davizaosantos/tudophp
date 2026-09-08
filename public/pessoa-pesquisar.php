@@ -1,31 +1,29 @@
 <?php
 
-require_once "../vendor/autoload.php";
+require_once __DIR__ . "/../vendor/autoload.php";
 
-use App\Config\Database;
+use App\DAO\PessoaDAO;
 
-$pesquisa = $_GET["pesquisa"] ?? "";
+$pesquisa = trim($_GET['pesquisa'] ?? '');
 
 try {
 
-    $conn = Database::conectar();
+    $dao = new PessoaDAO();
 
-    $sql = "SELECT * FROM pessoas
-            WHERE nome LIKE :pesquisa
-            OR cpf LIKE :pesquisa
-            ORDER BY id DESC";
+    if ($pesquisa !== '') {
+        $pessoas = $dao->pesquisar($pesquisa);
+    } else {
+        $pessoas = [];
+    }
 
-    $stmt = $conn->prepare($sql);
-    $stmt->bindValue(":pesquisa", "%" . $pesquisa . "%");
-    $stmt->execute();
+} catch (\PDOException $e) {
 
-    $pessoas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    die("Erro ao pesquisar pessoas: " . $e->getMessage());
 
-} catch (PDOException $e) {
-    die("Erro ao pesquisar: " . $e->getMessage());
 }
 
 $content = '
+
 <div class="container mt-4">
 
     <h2>Pesquisar Pessoa</h2>
@@ -33,11 +31,14 @@ $content = '
     <form method="GET" action="pessoa-pesquisar.php" class="mb-4">
 
         <div class="input-group">
-            <input type="text"
-                   name="pesquisa"
-                   class="form-control"
-                   placeholder="Digite o nome ou CPF"
-                   value="' . htmlspecialchars($pesquisa) . '">
+
+            <input
+                type="text"
+                name="pesquisa"
+                class="form-control"
+                placeholder="Digite nome, CPF ou telefone"
+                value="' . htmlspecialchars($pesquisa) . '"
+            >
 
             <button type="submit" class="btn btn-primary">
                 Pesquisar
@@ -46,62 +47,101 @@ $content = '
             <a href="pessoa-pesquisar.php" class="btn btn-secondary">
                 Limpar
             </a>
+
         </div>
 
     </form>
 
-    <table class="table table-striped table-bordered">
-
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Telefone</th>
-                <th>CPF</th>
-                <th>Endereço</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-
-        <tbody>
 ';
 
-foreach ($pessoas as $pessoa) {
+if ($pesquisa !== '') {
 
-    $content .= '
-            <tr>
-                <td>' . $pessoa["id"] . '</td>
-                <td>' . htmlspecialchars($pessoa["nome"]) . '</td>
-                <td>' . htmlspecialchars($pessoa["telefone"] ?? "") . '</td>
-                <td>' . htmlspecialchars($pessoa["cpf"]) . '</td>
-                <td>' . htmlspecialchars($pessoa["endereco"] ?? "") . '</td>
+    if (count($pessoas) > 0) {
 
-                <td>
-                    <a href="pessoa-alterar.php?id=' . $pessoa["id"] . '"
-                       class="btn btn-warning btn-sm">
-                        Alterar
-                    </a>
-                </td>
-            </tr>
-    ';
-}
+        $content .= '
 
-if (count($pessoas) == 0) {
-    $content .= '
-            <tr>
-                <td colspan="6" class="text-center">
-                    Nenhuma pessoa encontrada.
-                </td>
-            </tr>
-    ';
+        <table class="table table-striped table-bordered">
+
+            <thead class="table-dark">
+
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>CPF</th>
+                    <th>Endereço</th>
+                    <th>Ações</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+        ';
+
+        foreach ($pessoas as $pessoa) {
+
+            $id = htmlspecialchars($pessoa['id']);
+            $nome = htmlspecialchars($pessoa['nome']);
+            $telefone = htmlspecialchars($pessoa['telefone'] ?? '');
+            $cpf = htmlspecialchars($pessoa['cpf']);
+            $endereco = htmlspecialchars($pessoa['endereco'] ?? '');
+
+            $content .= '
+
+                <tr>
+
+                    <td>' . $id . '</td>
+
+                    <td>' . $nome . '</td>
+
+                    <td>' . $telefone . '</td>
+
+                    <td>' . $cpf . '</td>
+
+                    <td>' . $endereco . '</td>
+
+                    <td>
+
+                        <a href="pessoa-alterar.php?id=' . $id . '"
+                           class="btn btn-warning btn-sm">
+                            Alterar
+                        </a>
+
+                    </td>
+
+                </tr>
+
+            ';
+        }
+
+        $content .= '
+
+            </tbody>
+
+        </table>
+
+        ';
+
+    } else {
+
+        $content .= '
+
+        <div class="alert alert-warning">
+            Nenhuma pessoa encontrada.
+        </div>
+
+        ';
+    }
 }
 
 $content .= '
-        </tbody>
 
-    </table>
+    <a href="listar.php" class="btn btn-secondary">
+        Voltar para lista
+    </a>
 
 </div>
+
 ';
 
 include "layout.php";
