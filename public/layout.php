@@ -27,8 +27,8 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Movimentação</a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/movimentação-create.php">Cadastrar</a></li>
-                            <li><a class="dropdown-item" href="/movimentação-list.php">Listar</a></li>
+                            <li><a class="dropdown-item" href="/movimentacao-create.php">Cadastrar</a></li>
+                            <li><a class="dropdown-item" href="/movimentacao-list.php">Listar</a></li>
                         </ul>
                     </li>
                 </ul>
