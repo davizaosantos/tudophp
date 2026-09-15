@@ -4,34 +4,122 @@ require_once __DIR__ . "/../vendor/autoload.php";
 
 use App\DAO\MovimentacaoDAO;
 
-$pessoaId = (int) ($_POST['pessoa_id'] ?? 0);
-$tipo = $_POST['tipo'] ?? '';
-$valor = (float) ($_POST['valor'] ?? 0);
-
-if ($pessoaId <= 0 || $valor <= 0) {
-    die("Dados inválidos.");
-}
-
 $dao = new MovimentacaoDAO();
 
-if ($tipo === 'DEPOSITO') {
+$movimentacoes = $dao->listar();
 
-    $resultado = $dao->depositar($pessoaId, $valor);
+$content = '
+<div class="container">
 
-} elseif ($tipo === 'SAQUE') {
+    <div class="d-flex justify-content-between align-items-center mb-4">
 
-    $resultado = $dao->sacar($pessoaId, $valor);
+        <h2>Movimentações</h2>
+
+        <a href="movimentacao-create.php"
+           class="btn btn-primary">
+            Nova Movimentação
+        </a>
+
+    </div>
+
+    <div class="mb-4">
+
+        <a href="movimentacao-create.php?tipo=DEPOSITO"
+           class="btn btn-success">
+            Depositar
+        </a>
+
+        <a href="movimentacao-create.php?tipo=SAQUE"
+           class="btn btn-danger">
+            Sacar
+        </a>
+
+        <a href="movimentacao-create.php?tipo=TRANSFERENCIA"
+           class="btn btn-primary">
+            Transferir
+        </a>
+
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="table table-bordered table-striped">
+
+            <thead class="table-dark">
+
+                <tr>
+                    <th>ID</th>
+                    <th>Pessoa</th>
+                    <th>Crédito</th>
+                    <th>Débito</th>
+                    <th>Data</th>
+                    <th>Observação</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+';
+
+if (count($movimentacoes) === 0) {
+
+    $content .= '
+                <tr>
+                    <td colspan="6"
+                        class="text-center">
+                        Nenhuma movimentação cadastrada.
+                    </td>
+                </tr>
+    ';
 
 } else {
 
-    die("Transferência deve ser realizada pela opção Transferir.");
+    foreach ($movimentacoes as $movimentacao) {
+
+        $credito = (float) $movimentacao['Credito'];
+        $debito = (float) $movimentacao['Debito'];
+
+        $content .= '
+                <tr>
+
+                    <td>' . $movimentacao['id'] . '</td>
+
+                    <td>' .
+                        htmlspecialchars($movimentacao['pessoa']) .
+                    '</td>
+
+                    <td>
+                        R$ ' .
+                        number_format($credito, 2, ',', '.') .
+                    '</td>
+
+                    <td>
+                        R$ ' .
+                        number_format($debito, 2, ',', '.') .
+                    '</td>
+
+                    <td>' .
+                        $movimentacao['DataOperacao'] .
+                    '</td>
+
+                    <td>' .
+                        htmlspecialchars($movimentacao['Observacao'] ?? '') .
+                    '</td>
+
+                </tr>
+        ';
+    }
 }
 
-if ($resultado) {
+$content .= '
+            </tbody>
 
-    header("Location: movimentacao-list.php");
-    exit;
-}
+        </table>
 
-die("Erro ao realizar movimentação.");
+    </div>
+
+</div>
+';
+
+include "layout.php";
 ?>

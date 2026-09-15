@@ -16,15 +16,16 @@ class MovimentacaoDAO
 
     public function listar(): array
     {
-        $sql = "SELECT 
+        $sql = "SELECT
                     m.id,
                     m.idPessoa,
                     m.Credito,
                     m.Debito,
                     m.DataOperacao,
                     m.Observacao,
+                    m.CreatedAt,
                     p.nome AS pessoa
-                FROM movimentacoes m
+                FROM movimentacao m
                 INNER JOIN pessoas p ON p.id = m.idPessoa
                 ORDER BY m.id DESC";
 
@@ -33,101 +34,143 @@ class MovimentacaoDAO
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function pesquisarPessoa(string $nome): array
+    {
+        $sql = "SELECT id, nome, cpf
+                FROM pessoas
+                WHERE nome LIKE :nome
+                ORDER BY nome ASC";
+
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->execute([
+            ':nome' => '%' . $nome . '%'
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function buscarPessoa(int $id): ?array
+    {
+        $sql = "SELECT id, nome, cpf
+                FROM pessoas
+                WHERE id = :id";
+
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->execute([
+            ':id' => $id
+        ]);
+
+        $pessoa = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $pessoa ?: null;
+    }
+
     public function depositar(int $idPessoa, float $valor): bool
     {
-        try {
+        $pessoa = $this->buscarPessoa($idPessoa);
 
-            $sql = "INSERT INTO movimentacoes
-                    (idPessoa, Credito, Debito, Observacao)
-                    VALUES
-                    (:idPessoa, :credito, 0, 'Depósito')";
-
-            $stmt = $this->conn->prepare($sql);
-
-            return $stmt->execute([
-                ':idPessoa' => $idPessoa,
-                ':credito' => $valor
-            ]);
-
-        } catch (\PDOException $e) {
-
-            return false;
+        if (!$pessoa) {
+            die("Pessoa inválida.");
         }
+
+        $sql = "INSERT INTO movimentacao
+                (idPessoa, Credito, Debito, Observacao)
+                VALUES
+                (:idPessoa, :credito, 0, 'Depósito')";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':idPessoa' => $idPessoa,
+            ':credito' => $valor
+        ]);
     }
 
     public function sacar(int $idPessoa, float $valor): bool
     {
-        try {
+        $pessoa = $this->buscarPessoa($idPessoa);
 
-            $sql = "SELECT 
-                        COALESCE(SUM(Credito), 0) -
-                        COALESCE(SUM(Debito), 0)
-                    FROM movimentacoes
-                    WHERE idPessoa = :idPessoa";
-
-            $stmt = $this->conn->prepare($sql);
-
-            $stmt->execute([
-                ':idPessoa' => $idPessoa
-            ]);
-
-            $saldo = (float) $stmt->fetchColumn();
-
-            if ($saldo < $valor) {
-                return false;
-            }
-
-            $sql = "INSERT INTO movimentacoes
-                    (idPessoa, Credito, Debito, Observacao)
-                    VALUES
-                    (:idPessoa, 0, :debito, 'Saque')";
-
-            $stmt = $this->conn->prepare($sql);
-
-            return $stmt->execute([
-                ':idPessoa' => $idPessoa,
-                ':debito' => $valor
-            ]);
-
-        } catch (\PDOException $e) {
-
-            return false;
+        if (!$pessoa) {
+            die("Pessoa inválida.");
         }
+
+        $sql = "SELECT
+                    COALESCE(SUM(Credito), 0) -
+                    COALESCE(SUM(Debito), 0)
+                FROM movimentacao
+                WHERE idPessoa = :idPessoa";
+
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->execute([
+            ':idPessoa' => $idPessoa
+        ]);
+
+        $saldo = (float) $stmt->fetchColumn();
+
+        if ($saldo < $valor) {
+            die("Saldo insuficiente. Saldo atual: R$ " .
+                number_format($saldo, 2, ',', '.'));
+        }
+
+        $sql = "INSERT INTO movimentacao
+                (idPessoa, Credito, Debito, Observacao)
+                VALUES
+                (:idPessoa, 0, :debito, 'Saque')";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':idPessoa' => $idPessoa,
+            ':debito' => $valor
+        ]);
     }
 
     public function transferir(
-        int $origem,
-        int $destino,
+        int $idOrigem,
+        int $idDestino,
         float $valor
     ): bool {
+        if ($idOrigem === $idDestino) {
+            die("Não é possível transferir para a mesma pessoa.");
+        }
 
-        if ($origem === $destino) {
-            return false;
+        $origem = $this->buscarPessoa($idOrigem);
+        $destino = $this->buscarPessoa($idDestino);
+
+        if (!$origem) {
+            die("Pessoa de origem inválida.");
+        }
+
+        if (!$destino) {
+            die("Pessoa de destino inválida.");
+        }
+
+        $sql = "SELECT
+                    COALESCE(SUM(Credito), 0) -
+                    COALESCE(SUM(Debito), 0)
+                FROM movimentacao
+                WHERE idPessoa = :idPessoa";
+
+        $stmt = $this->conn->prepare($sql);
+
+        $stmt->execute([
+            ':idPessoa' => $idOrigem
+        ]);
+
+        $saldo = (float) $stmt->fetchColumn();
+
+        if ($saldo < $valor) {
+            die("Saldo insuficiente. Saldo atual: R$ " .
+                number_format($saldo, 2, ',', '.'));
         }
 
         try {
-
-            $sql = "SELECT 
-                        COALESCE(SUM(Credito), 0) -
-                        COALESCE(SUM(Debito), 0)
-                    FROM movimentacoes
-                    WHERE idPessoa = :idPessoa";
-
-            $stmt = $this->conn->prepare($sql);
-
-            $stmt->execute([
-                ':idPessoa' => $origem
-            ]);
-
-            $saldo = (float) $stmt->fetchColumn();
-
-            if ($saldo < $valor) {
-                return false;
-            }
-
             $this->conn->beginTransaction();
 
-            $sql = "INSERT INTO movimentacoes
+            $sql = "INSERT INTO movimentacao
                     (idPessoa, Credito, Debito, Observacao)
                     VALUES
                     (:idPessoa, 0, :valor, 'Transferência enviada')";
@@ -135,11 +178,11 @@ class MovimentacaoDAO
             $stmt = $this->conn->prepare($sql);
 
             $stmt->execute([
-                ':idPessoa' => $origem,
+                ':idPessoa' => $idOrigem,
                 ':valor' => $valor
             ]);
 
-            $sql = "INSERT INTO movimentacoes
+            $sql = "INSERT INTO movimentacao
                     (idPessoa, Credito, Debito, Observacao)
                     VALUES
                     (:idPessoa, :valor, 0, 'Transferência recebida')";
@@ -147,7 +190,7 @@ class MovimentacaoDAO
             $stmt = $this->conn->prepare($sql);
 
             $stmt->execute([
-                ':idPessoa' => $destino,
+                ':idPessoa' => $idDestino,
                 ':valor' => $valor
             ]);
 
@@ -161,7 +204,7 @@ class MovimentacaoDAO
                 $this->conn->rollBack();
             }
 
-            return false;
+            die("ERRO NO BANCO: " . $e->getMessage());
         }
     }
 }
