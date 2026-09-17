@@ -1,32 +1,49 @@
 <?php
 
-require_once "../vendor/autoload.php";
+require_once __DIR__ . "/../vendor/autoload.php";
 
-use App\Config\Conexao;
+use App\DAO\PessoaDAO;
 
-$nome = $_POST["nome"];
-$telefone = $_POST["telefone"];
-$cpf = $_POST["cpf"];
-$endereco = $_POST["endereco"];
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: pessoa-create.php");
+    exit;
+}
 
-$sql = "INSERT INTO pessoas (nome, telefone, cpf, endereco)
-        VALUES (:nome, :telefone, :cpf, :endereco)";
+$nome = trim($_POST['nome'] ?? '');
+$telefone = trim($_POST['telefone'] ?? '');
+$cpf = trim($_POST['cpf'] ?? '');
+$endereco = trim($_POST['endereco'] ?? '');
+
+if ($nome === '') {
+    die("Nome é obrigatório.");
+}
+
+if ($cpf === '') {
+    die("CPF é obrigatório.");
+}
+
+$telefone = $telefone !== '' ? $telefone : null;
+$endereco = $endereco !== '' ? $endereco : null;
+
+$dao = new PessoaDAO();
 
 try {
-    $conn = Conexao::conectar();
 
-    $stmt = $conn->prepare($sql);
-
-    $stmt->bindValue(":nome", $nome);
-    $stmt->bindValue(":telefone", $telefone);
-    $stmt->bindValue(":cpf", $cpf);
-    $stmt->bindValue(":endereco", $endereco);
-
-    $stmt->execute();
+    $dao->inserir(
+        $nome,
+        $telefone,
+        $cpf,
+        $endereco
+    );
 
     header("Location: pessoa-listar.php");
     exit;
 
-} catch (PDOException $e) {
-    echo "Erro ao cadastrar pessoa: " . $e->getMessage();
+} catch (\PDOException $e) {
+
+    if ($e->getCode() === '23000') {
+        die("CPF já cadastrado.");
+    }
+
+    die("Erro ao cadastrar pessoa: " . $e->getMessage());
 }

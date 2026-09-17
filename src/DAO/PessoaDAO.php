@@ -14,6 +14,27 @@ class PessoaDAO
         $this->conn = Database::conectar();
     }
 
+    public function inserir(
+        string $nome,
+        ?string $telefone,
+        string $cpf,
+        ?string $endereco
+    ): bool {
+        $sql = "INSERT INTO pessoas
+                (nome, telefone, cpf, endereco)
+                VALUES
+                (:nome, :telefone, :cpf, :endereco)";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':nome' => $nome,
+            ':telefone' => $telefone,
+            ':cpf' => $cpf,
+            ':endereco' => $endereco
+        ]);
+    }
+
     public function listar(): array
     {
         $sql = "SELECT id, nome, telefone, cpf, endereco, createdAt, updatedAt
@@ -40,5 +61,17 @@ class PessoaDAO
         ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function excluir(int $id): bool
+    {
+        $sql = "DELETE FROM pessoas
+                WHERE id = :id";
+
+        $stmt = $this->conn->prepare($sql);
+
+        return $stmt->execute([
+            ':id' => $id
+        ]);
     }
 }
